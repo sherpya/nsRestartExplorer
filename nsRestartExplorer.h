@@ -27,7 +27,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SHELL "explorer.exe"
+#define SHELL       "explorer.exe"
+#define SHELLWND    "Progman"
 
 #ifndef _DEBUG
 #define OutputDebugStringA(x) {}

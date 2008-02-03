@@ -28,6 +28,9 @@ BOOL StartExplorer(DWORD timeout)
     BOOL redirOk = FALSE;
     OutputDebugStringA("nsRE::StartExplorer");
 
+    if (FindWindowA(SHELLWND, NULL))
+        NS_FAILED(NULL, "Explorer already started");
+
     /* Disable Wow64 Redirection so we'll able to start 64bit explorer */
     if (pW64NoRedir) redirOk = pW64NoRedir(&OldValue);
 
@@ -75,7 +78,7 @@ BOOL QuitExplorer(DWORD timeout)
 
     OutputDebugStringA("nsRE::QuitExplorer");
 
-    if (!(explWin = FindWindowA("Progman", NULL)))
+    if (!(explWin = FindWindowA(SHELLWND, NULL)))
         NS_FAILED(explProc, "Cannot find explorer window");
 
     GetWindowThreadProcessId(explWin, &pid);
@@ -83,7 +86,7 @@ BOOL QuitExplorer(DWORD timeout)
     if (!(explProc = OpenProcess(SYNCHRONIZE, FALSE, pid)))
         NS_FAILED(explProc, "Cannot open explorer proces");
 
-    if (!PostMessage(explWin, WM_QUIT, 0, 0))
+    if (!PostMessageA(explWin, WM_QUIT, 0, 0))
         NS_FAILED(explProc, "Cannot send WM_QUIT to explorer window");
 
     switch (WaitForSingleObject(explProc, timeout))
