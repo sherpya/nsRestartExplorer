@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Wextra -pedantic -Os -pipe
+CFLAGS=-Wall -Wextra -pedantic -Os -pipe -mno-cygwin
 LDFLAGS=-s
 
 CC=$(MINGW32_CROSS_PREFIX)gcc
