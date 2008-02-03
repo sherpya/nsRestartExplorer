@@ -214,6 +214,10 @@
 				RelativePath=".\nsRestartExplorer.def"
 				>
 			</File>
+			<File
+				RelativePath=".\nsRestartExplorer.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
