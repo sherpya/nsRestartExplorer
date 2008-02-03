@@ -93,7 +93,7 @@ static inline void pushstring(const char *str)
     name(NS_UNUSED HWND hwndParent, int string_size, char *variables, stack_t **stacktop) { \
         g_stringsize = string_size; \
         g_stacktop = stacktop; \
-        g_variables = variables; 
+        g_variables = variables;
 #define PLUGINFUNCTIONEND }
 
 #define inNSIS() (g_stringsize && g_stacktop && g_variables)
