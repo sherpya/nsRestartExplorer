@@ -44,9 +44,12 @@ timeout:
 - #        -> milliseconds to wait
 
 [notes]
+- Please look at the example nsRestart.nsi
 - arguments are not case sensitive, i.e. you can use start or START
 - I've tested it on Win9x, WinXP SP2 and WinXP SP2 64bit,
   it should work with all versions of Windows, no infoas about Vista
+- On Win64 it is able to start 64bit version of explorer by
+  disabling the WoW64 Filesystem Redirection
 - Some kind of windows, like pidgin and amd power monitor,
   can become unhided when explorer is restarted
 - MinGW executable is smaller since it uses system msvcrt so it's
