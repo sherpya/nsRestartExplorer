@@ -49,6 +49,14 @@ typedef BOOL (WINAPI *pW64RevertF)(LPVOID *OldValue);
 extern pW64NoRedirF pW64NoRedir;
 extern pW64RevertF pW64Revert;
 
+typedef enum
+{
+    ACTION_START = 0,
+    ACTION_QUIT,
+    ACTION_RESTART,
+    ACTION_INVALID
+} action_t;
+
 typedef struct _stack_t {
   struct _stack_t *next;
   char text[1];
@@ -68,6 +76,9 @@ extern char *g_variables;
 extern BOOL StartExplorer(DWORD timeout);
 extern BOOL QuitExplorer(DWORD timeout);
 extern BOOL RestartExplorer(DWORD timeout);
+
+extern action_t nsiParseAction(char *argument);
+extern BOOL nsiParseTimeout(char *argument, LPDWORD timeout);
 
 static inline int popstring(char *str)
 {
@@ -90,8 +101,8 @@ static inline void pushstring(const char *str)
     *g_stacktop = th;
 }
 
-#define PLUGINFUNCTION(name) void __declspec(dllexport) \
-    name(NS_UNUSED HWND hwndParent, int string_size, char *variables, stack_t **stacktop) { \
+#define PLUGINFUNCTION(name) \
+    void name(NS_UNUSED HWND hwndParent, int string_size, char *variables, stack_t **stacktop) { \
         g_stringsize = string_size; \
         g_stacktop = stacktop; \
         g_variables = variables;
@@ -110,4 +121,19 @@ static inline void pushstring(const char *str)
     return FALSE;                                   \
 }
 
+#define NS_DOACTION() \
+    switch (action) \
+    { \
+        case ACTION_START: \
+            result = StartExplorer(timeout); \
+            break; \
+        case ACTION_QUIT: \
+            result = QuitExplorer(timeout); \
+            break; \
+        case ACTION_RESTART: \
+            result = RestartExplorer(timeout); \
+            break; \
+        default: \
+            break; \
+    }
 #endif /* _NS_RESTART_EXPLORER_H */

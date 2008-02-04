@@ -19,6 +19,63 @@
  */
 
 #include "nsRestartExplorer.h"
+#include <ctype.h>
+
+
+action_t nsiParseAction(char *argument)
+{
+    action_t action = ACTION_INVALID;
+    char *p = argument;
+    while (*p) { *p = tolower((unsigned char) *p); p++; };
+
+    if (!strcmp(argument, "start")) action = ACTION_START;
+    else if(!strcmp(argument, "quit")) action = ACTION_QUIT;
+    else if(!strcmp(argument, "restart")) action = ACTION_RESTART;
+
+    return action;
+}
+
+BOOL nsiParseTimeout(char *argument, LPDWORD timeout)
+{
+    BOOL res = TRUE;
+    char *p = argument;
+    while (*p) { *p = tolower((unsigned char) *p); p++; };
+
+    if (!strcmp(argument, "infinite"))
+        *timeout = INFINITE;
+    else if (!strcmp(argument, "ignore"))
+        *timeout = IGNORE;
+    else if ((argument[0] == '-') || !(*timeout = atoi(argument)))
+        res = FALSE;
+    return res;
+}
+
+/* RunDll32 */
+void CALLBACK nsRE(NS_UNUSED HWND hwnd, NS_UNUSED HINSTANCE hinst, LPSTR lpszCmdLine, NS_UNUSED int nCmdShow)
+{
+    DWORD timeout = IGNORE;
+    action_t action = ACTION_INVALID;
+    BOOL result = FALSE;
+    char *p = NULL;
+
+    if ((p = strchr(lpszCmdLine, ' ')))
+    {
+        *p = 0; p++;
+        if ((action = nsiParseAction(lpszCmdLine)) == ACTION_INVALID)
+        {
+            OutputDebugStringA("nsRE::Invalid Action");
+            return;
+        }
+    }
+
+    if (!(*p) || !nsiParseTimeout(p, &timeout))
+    {
+        OutputDebugStringA("nsRE::Invalid Timeout");
+        return;
+    }
+
+    NS_DOACTION();
+}
 
 BOOL StartExplorer(DWORD timeout)
 {

@@ -3,10 +3,9 @@ OutFile "nsRestartExplorer.exe"
 ShowInstDetails show
 
 Section "Restart"
-    nsRestartExplorer::nsRestartExplorer INFINITE
-    ;nsRestartExplorer::nsRestartExplorer "IGNORE"
-    ;nsRestartExplorer::nsQuitExplorer INFINITE
-    ;nsRestartExplorer::nsStartExplorer INFINITE
+    nsRestartExplorer::nsRestartExplorer restart infinite
+    ;nsRestartExplorer::nsRestartExplorer restart ignore
+    ;nsRestartExplorer::nsRestartExplorer stop 1000
     Pop $1
     DetailPrint $1
 SectionEnd

@@ -29,42 +29,49 @@ unsigned int g_stringsize = 0;
 stack_t **g_stacktop = NULL;
 char *g_variables = NULL;
 
-static BOOL nsiParseTimeout(LPDWORD timeout)
+BOOL nsiParseArguments(action_t *action, LPDWORD timeout)
 {
-    BOOL res = TRUE;
     char *argument = NULL;
+    BOOL res = FALSE;
+    *timeout = IGNORE;
+    *action = ACTION_INVALID;
 
     OutputDebugStringA("nsRE::nsiParseTimeout");
 
-    if (!(argument = malloc(g_stringsize + 1)))
-        return FALSE; /* very weird if malloc() fails ;) */
-
+    /* Action */
+    if (!(argument = malloc(g_stringsize + 1))) return FALSE;
     popstring(argument);
     argument[g_stringsize] = 0;
-
-    if (!strcmp(argument, "INFINITE"))
-        *timeout = INFINITE;
-    else if (!strcmp(argument, "IGNORE"))
-        *timeout = IGNORE;
-    else if ((argument[0] == '-') || !(*timeout = atoi(argument)))
-        res = FALSE;
-
+    *action = nsiParseAction(argument);
     free(argument);
-    return res;
+
+    /* Timeout */
+    if (!(argument = malloc(g_stringsize + 1))) return FALSE;
+    popstring(argument);
+    argument[g_stringsize] = 0;
+    res = nsiParseTimeout(argument, timeout);
+    free(argument);
+
+    if (res && (*action != ACTION_INVALID)) return TRUE;
+    return FALSE;
 }
 
-#define nsDECLARE_FUNC(name)                                \
-    PLUGINFUNCTION(ns##name)                                \
-    {                                                       \
-        DWORD timeout = INFINITE;                           \
-        OutputDebugStringA("nsRE::ns"#name);                \
-        if (nsiParseTimeout(&timeout) && name(timeout))     \
-            pushstring("OK");                               \
-    } PLUGINFUNCTIONEND
+PLUGINFUNCTION(nsRestartExplorer)
+{
+    DWORD timeout = IGNORE;
+    action_t action = ACTION_INVALID;
+    BOOL result = FALSE;
 
-nsDECLARE_FUNC(StartExplorer)
-nsDECLARE_FUNC(QuitExplorer)
-nsDECLARE_FUNC(RestartExplorer)
+    if (!nsiParseArguments(&action, &timeout))
+    {
+        pushstring("Invalid arguments");
+        return;
+    }
+
+    NS_DOACTION();
+    if (result) pushstring("OK");
+
+} PLUGINFUNCTIONEND
 
 /* Dynamic load of Wow64 FS Redirectors */
 BOOL nsiLoadRedirectors(void)

@@ -1,9 +1,4 @@
 EXPORTS
 
-nsStartExplorer     @1
-nsQuitExplorer      @2
-nsRestartExplorer   @3
-
-StartExplorer       @4
-QuitExplorer        @5
-RestartExplorer     @6
+nsRE                @1
+nsRestartExplorer   @2

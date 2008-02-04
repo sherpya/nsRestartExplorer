@@ -1,5 +1,5 @@
 CFLAGS=-Wall -Wextra -pedantic -Os -pipe -mno-cygwin
-LDFLAGS=-s
+LDFLAGS=-s -mno-cygwin -Wl,--enable-stdcall-fixup
 
 CC=$(MINGW32_CROSS_PREFIX)gcc
 WINDRES=$(MINGW32_CROSS_PREFIX)windres
