@@ -20,7 +20,6 @@ This plugin is useful to replace Shell Extensions without doing a reboot,
 you can also use it from rundll32 when explorer does strange things
 like when it does not auto-hide the taskbar.
 
-
 Usage:
 
 [NSIS]:
