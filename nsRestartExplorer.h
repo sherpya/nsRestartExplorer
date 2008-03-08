@@ -115,7 +115,7 @@ static inline void pushstring(const char *str)
     if (inNSIS())                                   \
         pushstring("ERROR "text);                   \
     else                                            \
-        OutputDebugStringA("nsRE::!!"text"!!");   \
+        OutputDebugStringA("nsRE::!!"text"!!");     \
     if (handle && (handle != INVALID_HANDLE_VALUE)) \
         CloseHandle(handle);                        \
     return FALSE;                                   \
