@@ -29,7 +29,7 @@ Usage:
 
 [RunDll32]:
 - put the plugin in a place where rundll32 can find it
-- call rundll32 nsExplorerRestart,nsRE action timeout
+- call rundll32 nsRestartExplorer,nsRE action timeout
 
 [arguments]:
 action:
