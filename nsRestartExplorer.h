@@ -30,7 +30,12 @@
 #define SHELL       "explorer.exe"
 #define SHELLWND    "Progman"
 
-#ifndef _DEBUG
+#define SESSIONINFOKEY "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\SessionInfo"
+
+#ifdef _DEBUG
+#define NS_SHOWERR(x) OutputDebugStringA("nsRE:"x)
+#else
+#define NS_SHOWERR(x) MessageBoxA(NULL, x, "nsRestartExplorer Error", MB_ICONERROR | MB_OK)
 #define OutputDebugStringA(x) {}
 #endif
 

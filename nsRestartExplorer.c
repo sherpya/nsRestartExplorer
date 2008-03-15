@@ -20,8 +20,6 @@
 
 #include "nsRestartExplorer.h"
 
-/* __debugbreak(); */
-
 pW64NoRedirF pW64NoRedir = NULL;
 pW64RevertF pW64Revert = NULL;
 

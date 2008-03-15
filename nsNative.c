@@ -21,7 +21,6 @@
 #include "nsRestartExplorer.h"
 #include <ctype.h>
 
-
 action_t nsiParseAction(char *argument)
 {
     action_t action = ACTION_INVALID;
@@ -63,18 +62,77 @@ void CALLBACK nsRE(NS_UNUSED HWND hwnd, NS_UNUSED HINSTANCE hinst, LPSTR lpszCmd
         *p = 0; p++;
         if ((action = nsiParseAction(lpszCmdLine)) == ACTION_INVALID)
         {
-            OutputDebugStringA("nsRE::Invalid Action");
+            NS_SHOWERR("Invalid Action");
             return;
         }
     }
 
+    if (!p)
+    {
+        NS_SHOWERR("Invalid Arguments");
+        return;
+    }
+
     if (!(*p) || !nsiParseTimeout(p, &timeout))
     {
-        OutputDebugStringA("nsRE::Invalid Timeout");
+        NS_SHOWERR("Invalid Timeout");
         return;
     }
 
     NS_DOACTION();
+}
+
+BOOL FakeStartupIsDone(void)
+{
+    OSVERSIONINFO osv;
+    TOKEN_STATISTICS tst;
+    DWORD osz, disp;
+    HANDLE hToken;
+    HKEY hk;
+    char sinfo[MAX_PATH] = "";
+
+    osv.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+    GetVersionEx(&osv);
+
+    if (osv.dwPlatformId != VER_PLATFORM_WIN32_NT)
+    {
+        OutputDebugStringA("FakeStartupIsDone::No Need");
+        return TRUE;
+    }
+
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
+    {
+        OutputDebugStringA("FakeStartupIsDone::OpenProcessToken");
+        return FALSE;
+    }
+
+    if (!GetTokenInformation(hToken, TokenStatistics, &tst, sizeof(TOKEN_STATISTICS), &osz))
+    {
+        CloseHandle(hToken);
+        OutputDebugStringA("FakeStartupIsDone::GetTokenInformation");
+        return FALSE;
+    }
+
+    CloseHandle(hToken);
+
+    _snprintf(sinfo, MAX_PATH - 1, "%s\\%08x%08x", SESSIONINFOKEY, tst.AuthenticationId.HighPart, tst.AuthenticationId.LowPart);
+    sinfo[MAX_PATH - 1] = 0;
+
+    if (RegCreateKeyExA(HKEY_CURRENT_USER, sinfo, 0, NULL, REG_OPTION_VOLATILE, MAXIMUM_ALLOWED, NULL, &hk, NULL))
+    {
+        OutputDebugStringA("FakeStartupIsDone::RegCreateKeyExA SessionInfo");
+        return FALSE;
+    }
+
+    if (RegCreateKeyExA(hk, "StartupHasBeenRun", 0, NULL, REG_OPTION_VOLATILE, KEY_WRITE, NULL, &hk, &disp))
+    {
+        OutputDebugStringA("FakeStartupIsDone::RegCreateKeyExA StartupHasBeenRun");
+        RegCloseKey(hk);
+        return FALSE;
+    }
+
+    RegCloseKey(hk);
+    return TRUE;
 }
 
 BOOL StartExplorer(DWORD timeout)
@@ -158,6 +216,8 @@ BOOL QuitExplorer(DWORD timeout)
     }
 
     CloseHandle(explProc);
+    /* Not sure if it works always and everywhere */
+    FakeStartupIsDone();
     return TRUE;
 }
 
