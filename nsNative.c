@@ -86,7 +86,7 @@ BOOL FakeStartupIsDone(void)
 {
     OSVERSIONINFO osv;
     TOKEN_STATISTICS tst;
-    DWORD osz, disp;
+    DWORD osz;
     HANDLE hToken;
     HKEY hk;
     char sinfo[MAX_PATH] = "";
@@ -124,7 +124,7 @@ BOOL FakeStartupIsDone(void)
         return FALSE;
     }
 
-    if (RegCreateKeyExA(hk, "StartupHasBeenRun", 0, NULL, REG_OPTION_VOLATILE, KEY_WRITE, NULL, &hk, &disp))
+    if (RegCreateKeyExA(hk, "StartupHasBeenRun", 0, NULL, REG_OPTION_VOLATILE, KEY_WRITE, NULL, &hk, NULL))
     {
         OutputDebugStringA("FakeStartupIsDone::RegCreateKeyExA StartupHasBeenRun");
         RegCloseKey(hk);
@@ -216,9 +216,7 @@ BOOL QuitExplorer(DWORD timeout)
     }
 
     CloseHandle(explProc);
-    /* Not sure if it works always and everywhere */
-    FakeStartupIsDone();
-    return TRUE;
+    return FakeStartupIsDone();
 }
 
 BOOL RestartExplorer(DWORD timeout)
