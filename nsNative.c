@@ -169,7 +169,7 @@ BOOL StartExplorer(DWORD timeout)
         NS_FAILED(NULL, "Cannot spawn explorer process");
     }
 
-    /* Revert FS Redirection since may interfere with the Setup */
+    /* Revert FS Redirection since may interfer with the Setup */
     if (pW64Revert && redirOk) pW64Revert(OldValue);
 
     switch (WaitForInputIdle(pi.hProcess, timeout))
