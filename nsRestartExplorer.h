@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SHELL       "explorer.exe"
+#define SHELL       "\\explorer.exe"
 #define SHELLWND    "Progman"
 
 #define SESSIONINFOKEY "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\SessionInfo"
@@ -48,11 +48,6 @@
 #else
 #define NS_UNUSED
 #endif
-
-typedef BOOL (WINAPI *pW64NoRedirF)(LPVOID *OldValue);
-typedef BOOL (WINAPI *pW64RevertF)(LPVOID *OldValue);
-extern pW64NoRedirF pW64NoRedir;
-extern pW64RevertF pW64Revert;
 
 typedef enum
 {
@@ -78,9 +73,9 @@ extern unsigned int g_stringsize;
 extern stack_t **g_stacktop;
 extern char *g_variables;
 
-extern BOOL StartExplorer(DWORD timeout);
-extern BOOL QuitExplorer(DWORD timeout);
-extern BOOL RestartExplorer(DWORD timeout);
+extern BOOL StartExplorer(DWORD timeout, BOOL kill);
+extern BOOL QuitExplorer(DWORD timeout, BOOL kill);
+extern BOOL RestartExplorer(DWORD timeout, BOOL kill);
 
 extern action_t nsiParseAction(char *argument);
 extern BOOL nsiParseTimeout(char *argument, LPDWORD timeout);
@@ -116,6 +111,7 @@ static inline void pushstring(const char *str)
 #define inNSIS() (g_stringsize && g_stacktop && g_variables)
 
 #define NS_FAILED(handle, text)                     \
+do                                                  \
 {                                                   \
     if (inNSIS())                                   \
         pushstring("ERROR "text);                   \
@@ -124,19 +120,19 @@ static inline void pushstring(const char *str)
     if (handle && (handle != INVALID_HANDLE_VALUE)) \
         CloseHandle(handle);                        \
     return FALSE;                                   \
-}
+} while (0)
 
 #define NS_DOACTION() \
     switch (action) \
     { \
         case ACTION_START: \
-            result = StartExplorer(timeout); \
+            result = StartExplorer(timeout, kill); \
             break; \
         case ACTION_QUIT: \
-            result = QuitExplorer(timeout); \
+            result = QuitExplorer(timeout, kill); \
             break; \
         case ACTION_RESTART: \
-            result = RestartExplorer(timeout); \
+            result = RestartExplorer(timeout, kill); \
             break; \
         default: \
             break; \

@@ -25,11 +25,11 @@ Usage:
 [NSIS]:
 - put the plugin in NSIS Plugin directory
 - in your setup source add:
-  nsRestartExplorer::nsRestartExplorer action timeout
+  nsRestartExplorer::nsRestartExplorer action timeout [kill]
 
 [RunDll32]:
 - put the plugin in a place where rundll32 can find it
-- call rundll32 nsRestartExplorer,nsRE action timeout
+- call rundll32 nsRestartExplorer,nsRE action timeout [kill]
 
 [arguments]:
 action:
@@ -42,14 +42,13 @@ timeout:
 - ignore   -> do not wait at all
 - #        -> milliseconds to wait
 
+kill (optional):
+- if specified and quit timeouts attempt to kill explorer
+
 [notes]
 - Please look at the example nsRestart.nsi
 - arguments are not case sensitive, i.e. you can use start or START
 - I've tested it on Win9x, WinXP SP2 and WinXP SP2 64bit,
-  it should work with all versions of Windows, no infoas about Vista
-- On Win64 it is able to start 64bit version of explorer by
-  disabling the WoW64 Filesystem Redirection
-- Some kind of windows, like pidgin and amd power monitor,
-  can become unhided when explorer is restarted
+  it should work with all versions of Windows, no infos about Vista
 - MinGW executable is smaller since it uses system msvcrt so it's
   suitable for small installations

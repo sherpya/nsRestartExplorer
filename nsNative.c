@@ -54,8 +54,8 @@ void CALLBACK nsRE(NS_UNUSED HWND hwnd, NS_UNUSED HINSTANCE hinst, LPSTR lpszCmd
 {
     DWORD timeout = IGNORE;
     action_t action = ACTION_INVALID;
-    BOOL result = FALSE;
-    char *p = NULL;
+    BOOL result = FALSE, kill = FALSE;
+    char *p = NULL, *e = NULL;
 
     if ((p = strchr(lpszCmdLine, ' ')))
     {
@@ -73,11 +73,20 @@ void CALLBACK nsRE(NS_UNUSED HWND hwnd, NS_UNUSED HINSTANCE hinst, LPSTR lpszCmd
         return;
     }
 
-    if (!(*p) || !nsiParseTimeout(p, &timeout))
+    if ((e = strchr(p, ' ')))
+    {
+        *e = 0;
+        e++;
+    }
+
+    if (!nsiParseTimeout(p, &timeout))
     {
         NS_SHOWERR("Invalid Timeout");
         return;
     }
+
+    if (e && !_strnicmp(e, "kill", 4))
+        kill = TRUE;
 
     NS_DOACTION();
 }
@@ -135,19 +144,23 @@ BOOL FakeStartupIsDone(void)
     return TRUE;
 }
 
-BOOL StartExplorer(DWORD timeout)
+BOOL StartExplorer(DWORD timeout, NS_UNUSED BOOL kill)
 {
     STARTUPINFOA si;
     PROCESS_INFORMATION pi;
-    PVOID OldValue = NULL;
-    BOOL redirOk = FALSE;
+    char shellpath[MAX_PATH];
+
     OutputDebugStringA("nsRE::StartExplorer");
 
     if (FindWindowA(SHELLWND, NULL))
-        NS_FAILED(NULL, "Explorer already started");
+        NS_FAILED(NULL, "Explorer already running");
 
-    /* Disable Wow64 Redirection so we'll able to start 64bit explorer */
-    if (pW64NoRedir) redirOk = pW64NoRedir(&OldValue);
+    GetWindowsDirectoryA(shellpath, MAX_PATH - 1);
+    shellpath[MAX_PATH - 1] = 0;
+    strncat(shellpath, SHELL, MAX_PATH - 1);
+    shellpath[MAX_PATH - 1] = 0;
+
+    FakeStartupIsDone();
 
     memset(&pi, 0, sizeof(PROCESS_INFORMATION));
     memset(&si, 0, sizeof(STARTUPINFO));
@@ -155,7 +168,7 @@ BOOL StartExplorer(DWORD timeout)
     si.cb = sizeof(STARTUPINFO);
 
     if(!CreateProcessA(NULL,    /* No module name (use command line) */
-        SHELL,                  /* Command line */
+        shellpath,              /* Command line */
         NULL,                   /* Process handle not inheritable */
         NULL,                   /* Thread handle not inheritable */
         FALSE,                  /* Set handle inheritance to FALSE */
@@ -164,13 +177,7 @@ BOOL StartExplorer(DWORD timeout)
         NULL,                   /* Use parent's starting directory */
         &si,                    /* Pointer to STARTUPINFO structure */
         &pi))                   /* Pointer to PROCESS_INFORMATION structure */
-    {
-        if (pW64Revert) pW64Revert(OldValue);
         NS_FAILED(NULL, "Cannot spawn explorer process");
-    }
-
-    /* Revert FS Redirection since may interfer with the Setup */
-    if (pW64Revert && redirOk) pW64Revert(OldValue);
 
     switch (WaitForInputIdle(pi.hProcess, timeout))
     {
@@ -185,7 +192,7 @@ BOOL StartExplorer(DWORD timeout)
     return TRUE;
 }
 
-BOOL QuitExplorer(DWORD timeout)
+BOOL QuitExplorer(DWORD timeout, NS_UNUSED BOOL kill)
 {
     HWND explWin = NULL;
     HANDLE explProc = NULL;
@@ -211,17 +218,24 @@ BOOL QuitExplorer(DWORD timeout)
             NS_FAILED(explProc, "WaitForSingleObject() returned Abandoned (?)");
         case WAIT_TIMEOUT:
             if (timeout == IGNORE) break; /* OK as requested */
-            StartExplorer(IGNORE); /* restart anyway or the user will have no shell */
-            NS_FAILED(explProc, "Timeout while waiting for explorer process termination");
+            if (kill)
+            {
+                OutputDebugStringA("nsRE::QuitExplorer Terminating explorer");
+                TerminateProcess(explProc, 0); /* Kill the process if requested */
+            }
+            StartExplorer(IGNORE, FALSE); /* restart anyway or the user will have no shell */
+            if (kill)
+                NS_FAILED(explProc, "Process killed due to timeout");
+            else
+                NS_FAILED(explProc, "Timeout while waiting for explorer process termination");
     }
 
     CloseHandle(explProc);
-    return FakeStartupIsDone();
+    return TRUE;
 }
 
-BOOL RestartExplorer(DWORD timeout)
+BOOL RestartExplorer(DWORD timeout, BOOL kill)
 {
     OutputDebugStringA("nsRE::RestartExplorer");
-    QuitExplorer(timeout);
-    return StartExplorer(timeout);
+    return (QuitExplorer(timeout, kill) && StartExplorer(timeout, kill));
 }

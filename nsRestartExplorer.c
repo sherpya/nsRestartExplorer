@@ -20,34 +20,49 @@
 
 #include "nsRestartExplorer.h"
 
-pW64NoRedirF pW64NoRedir = NULL;
-pW64RevertF pW64Revert = NULL;
-
 unsigned int g_stringsize = 0;
 stack_t **g_stacktop = NULL;
 char *g_variables = NULL;
 
-BOOL nsiParseArguments(action_t *action, LPDWORD timeout)
+BOOL nsiParseArguments(action_t *action, LPDWORD timeout, LPBOOL kill)
 {
     char *argument = NULL;
     BOOL res = FALSE;
     *timeout = IGNORE;
     *action = ACTION_INVALID;
+    *kill = FALSE;
 
     OutputDebugStringA("nsRE::nsiParseTimeout");
 
     /* Action */
     if (!(argument = malloc(g_stringsize + 1))) return FALSE;
-    popstring(argument);
+    if (popstring(argument))
+    {
+        free(argument);
+        return FALSE;
+    }
     argument[g_stringsize] = 0;
     *action = nsiParseAction(argument);
     free(argument);
 
     /* Timeout */
     if (!(argument = malloc(g_stringsize + 1))) return FALSE;
-    popstring(argument);
-    argument[g_stringsize] = 0;
+    if (popstring(argument))
+    {
+        free(argument);
+        return FALSE;
+    }
     res = nsiParseTimeout(argument, timeout);
+    free(argument);
+
+    /* KiLL */
+    if (!(argument = malloc(g_stringsize + 1))) return FALSE;
+    if (!popstring(argument))
+    {
+        popstring(argument);
+        argument[g_stringsize] = 0;
+        *kill = !_strnicmp(argument, "kill", 4);
+    }
     free(argument);
 
     if (res && (*action != ACTION_INVALID)) return TRUE;
@@ -58,9 +73,10 @@ PLUGINFUNCTION(nsRestartExplorer)
 {
     DWORD timeout = IGNORE;
     action_t action = ACTION_INVALID;
+    BOOL kill = FALSE;
     BOOL result = FALSE;
 
-    if (!nsiParseArguments(&action, &timeout))
+    if (!nsiParseArguments(&action, &timeout, &kill))
     {
         pushstring("Invalid arguments");
         return;
@@ -71,16 +87,6 @@ PLUGINFUNCTION(nsRestartExplorer)
 
 } PLUGINFUNCTIONEND
 
-/* Dynamic load of Wow64 FS Redirectors */
-BOOL nsiLoadRedirectors(void)
-{
-    HMODULE hK32 = GetModuleHandleA("kernel32.dll");
-    if (!hK32) return FALSE; /* Unlikely */
-    pW64NoRedir = (pW64NoRedirF) GetProcAddress(hK32, "Wow64DisableWow64FsRedirection");
-    pW64Revert = (pW64RevertF) GetProcAddress(hK32, "Wow64RevertWow64FsRedirection");
-    return (pW64NoRedir && pW64Revert);
-}
-
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, NS_UNUSED LPVOID lpReserved)
 {
 	switch (reason)
@@ -88,7 +94,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, NS_UNUSED LPVOID lpReserved
 	    case DLL_PROCESS_ATTACH:
             DisableThreadLibraryCalls(hModule);
             OutputDebugStringA("nsRE::DllMain");
-            nsiLoadRedirectors();
 	    case DLL_THREAD_ATTACH:
 	    case DLL_THREAD_DETACH:
 	    case DLL_PROCESS_DETACH:
