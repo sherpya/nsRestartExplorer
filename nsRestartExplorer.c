@@ -89,15 +89,15 @@ PLUGINFUNCTION(nsRestartExplorer)
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, NS_UNUSED LPVOID lpReserved)
 {
-	switch (reason)
-	{
-	    case DLL_PROCESS_ATTACH:
+    switch (reason)
+    {
+        case DLL_PROCESS_ATTACH:
             DisableThreadLibraryCalls(hModule);
             OutputDebugStringA("nsRE::DllMain");
-	    case DLL_THREAD_ATTACH:
-	    case DLL_THREAD_DETACH:
-	    case DLL_PROCESS_DETACH:
-		    break;
-	}
+        case DLL_THREAD_ATTACH:
+        case DLL_THREAD_DETACH:
+        case DLL_PROCESS_DETACH:
+            break;
+    }
     return TRUE;
 }
