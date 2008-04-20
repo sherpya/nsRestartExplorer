@@ -21,6 +21,12 @@
 #include "nsRestartExplorer.h"
 #include <ctype.h>
 
+typedef struct _nsExpData
+{
+    HWND explWin;
+    DWORD pid;
+} nsExpData;
+
 action_t nsiParseAction(char *argument)
 {
     action_t action = ACTION_INVALID;
@@ -192,24 +198,41 @@ BOOL StartExplorer(DWORD timeout, NS_UNUSED BOOL kill)
     return TRUE;
 }
 
+BOOL CALLBACK CloseExplorerWindows(HWND hwnd, LPARAM lParam)
+{
+    nsExpData *exData = (nsExpData *) lParam;
+    DWORD pid;
+    GetWindowThreadProcessId(hwnd, &pid);
+    if (pid == exData->pid)
+    {
+#ifdef _DEBUG
+        char buff[1024], title[1024];
+        GetWindowTextA(hwnd, title, 1023);
+        _snprintf(buff, 1023, "nsRE::CallBack closing window %s (0x%p)", title, hwnd);
+        OutputDebugStringA(buff);
+#endif
+        PostMessageA(hwnd, WM_QUIT, 0, 0);
+    }
+
+    return TRUE;
+}
+
 BOOL QuitExplorer(DWORD timeout, NS_UNUSED BOOL kill)
 {
-    HWND explWin = NULL;
     HANDLE explProc = NULL;
-    DWORD pid = -1;
+    nsExpData exData;
 
     OutputDebugStringA("nsRE::QuitExplorer");
 
-    if (!(explWin = FindWindowA(SHELLWND, NULL)))
+    if (!(exData.explWin = FindWindowA(SHELLWND, NULL)))
         NS_FAILED(explProc, "Cannot find explorer window");
 
-    GetWindowThreadProcessId(explWin, &pid);
+    GetWindowThreadProcessId(exData.explWin, &exData.pid);
 
-    if (!(explProc = OpenProcess(SYNCHRONIZE, FALSE, pid)))
+    if (!(explProc = OpenProcess(SYNCHRONIZE, FALSE, exData.pid)))
         NS_FAILED(explProc, "Cannot open explorer proces");
 
-    if (!PostMessageA(explWin, WM_QUIT, 0, 0))
-        NS_FAILED(explProc, "Cannot send WM_QUIT to explorer window");
+    EnumWindows(CloseExplorerWindows, (LPARAM) &exData);
 
     switch (WaitForSingleObject(explProc, timeout))
     {
