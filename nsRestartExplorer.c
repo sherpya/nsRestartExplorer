@@ -1,7 +1,7 @@
 /*
  * NSIS Plugin to gracefully restart explorer
  *
- * Copyright (c) 2008 Gianluigi Tiesi <sherpya@netfarm.it>
+ * Copyright (c) 2008-2010 Gianluigi Tiesi <sherpya@netfarm.it>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -22,20 +22,24 @@
 
 unsigned int g_stringsize = 0;
 stack_t **g_stacktop = NULL;
-char *g_variables = NULL;
+TCHAR *g_variables = NULL;
 
 BOOL nsiParseArguments(action_t *action, LPDWORD timeout, LPBOOL kill)
 {
-    char *argument = NULL;
+    size_t allocsize = (g_stringsize + 1) * sizeof(TCHAR);
+    TCHAR *argument = NULL;
     BOOL res = FALSE;
     *timeout = IGNORE;
     *action = ACTION_INVALID;
     *kill = FALSE;
+    
 
-    OutputDebugStringA("nsRE::nsiParseTimeout");
+    OutputDebugString(_T("nsRE::nsiParseTimeout"));
 
     /* Action */
-    if (!(argument = malloc(g_stringsize + 1))) return FALSE;
+    if (!(argument = malloc(allocsize)))
+        return FALSE;
+
     if (popstring(argument))
     {
         free(argument);
@@ -46,7 +50,9 @@ BOOL nsiParseArguments(action_t *action, LPDWORD timeout, LPBOOL kill)
     free(argument);
 
     /* Timeout */
-    if (!(argument = malloc(g_stringsize + 1))) return FALSE;
+    if (!(argument = malloc(allocsize)))
+        return FALSE;
+
     if (popstring(argument))
     {
         free(argument);
@@ -56,12 +62,14 @@ BOOL nsiParseArguments(action_t *action, LPDWORD timeout, LPBOOL kill)
     free(argument);
 
     /* KiLL */
-    if (!(argument = malloc(g_stringsize + 1))) return FALSE;
+    if (!(argument = malloc(allocsize)))
+        return FALSE;
+
     if (!popstring(argument))
     {
         popstring(argument);
         argument[g_stringsize] = 0;
-        *kill = !_strnicmp(argument, "kill", 4);
+        *kill = !_tcsnicmp(argument, _T("kill"), 4);
     }
     free(argument);
 
@@ -78,12 +86,12 @@ PLUGINFUNCTION(nsRestartExplorer)
 
     if (!nsiParseArguments(&action, &timeout, &kill))
     {
-        pushstring("Invalid arguments");
+        pushstring(_T("Invalid arguments"));
         return;
     }
 
     NS_DOACTION();
-    if (result) pushstring("OK");
+    if (result) pushstring(_T("OK"));
 
 } PLUGINFUNCTIONEND
 
@@ -93,7 +101,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, NS_UNUSED LPVOID lpReserved
     {
         case DLL_PROCESS_ATTACH:
             DisableThreadLibraryCalls(hModule);
-            OutputDebugStringA("nsRE::DllMain");
+            OutputDebugString(_T("nsRE::DllMain"));
         case DLL_THREAD_ATTACH:
         case DLL_THREAD_DETACH:
         case DLL_PROCESS_DETACH:

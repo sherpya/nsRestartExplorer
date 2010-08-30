@@ -3,8 +3,8 @@
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 VS_VERSION_INFO VERSIONINFO
-	FILEVERSION 1,3,0,0
-	PRODUCTVERSION 1,3,0,0
+	FILEVERSION 1,4,0,0
+	PRODUCTVERSION 1,4,0,0
 	FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
 	FILEFLAGS 0x1L
@@ -20,12 +20,12 @@ BEGIN
 		BLOCK "00000409"
 		BEGIN
 			VALUE "FileDescription", "Stop, start and gracefully restart explorer"
-			VALUE "FileVersion", "1, 3, 0, 0"
+			VALUE "FileVersion", "1, 4, 0, 0"
 			VALUE "InternalName", "nsRestartExplorer"
-			VALUE "LegalCopyright", "Copyright (C) 2008 Gianluigi Tiesi"
+			VALUE "LegalCopyright", "Copyright (C) 2010 Gianluigi Tiesi"
 			VALUE "OriginalFilename", "nsRestartExplorer.dll"
 			VALUE "ProductName", "nsRestartExplorer"
-			VALUE "ProductVersion", "1, 3, 0, 0"
+			VALUE "ProductVersion", "1, 4, 0, 0"
 		END
 	END
 	BLOCK "VarFileInfo"

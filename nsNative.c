@@ -1,7 +1,7 @@
 /*
  * NSIS Plugin to gracefully restart explorer
  *
- * Copyright (c) 2008 Gianluigi Tiesi <sherpya@netfarm.it>
+ * Copyright (c) 2008-2010 Gianluigi Tiesi <sherpya@netfarm.it>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -19,7 +19,6 @@
  */
 
 #include "nsRestartExplorer.h"
-#include <ctype.h>
 
 typedef struct _nsExpData
 {
@@ -27,59 +26,55 @@ typedef struct _nsExpData
     DWORD pid;
 } nsExpData;
 
-action_t nsiParseAction(char *argument)
+action_t nsiParseAction(TCHAR *argument)
 {
     action_t action = ACTION_INVALID;
-    char *p = argument;
-    while (*p) { *p = tolower((unsigned char) *p); p++; };
 
-    if (!strcmp(argument, "start")) action = ACTION_START;
-    else if(!strcmp(argument, "quit")) action = ACTION_QUIT;
-    else if(!strcmp(argument, "restart")) action = ACTION_RESTART;
+    if (!_tcsicmp(argument, _T("start"))) action = ACTION_START;
+    else if(!_tcsicmp(argument, _T("quit"))) action = ACTION_QUIT;
+    else if(!_tcsicmp(argument, _T("restart"))) action = ACTION_RESTART;
 
     return action;
 }
 
-BOOL nsiParseTimeout(char *argument, LPDWORD timeout)
+BOOL nsiParseTimeout(TCHAR *argument, LPDWORD timeout)
 {
     BOOL res = TRUE;
-    char *p = argument;
-    while (*p) { *p = tolower((unsigned char) *p); p++; };
 
-    if (!strcmp(argument, "infinite"))
+    if (!_tcsicmp(argument, _T("infinite")))
         *timeout = INFINITE;
-    else if (!strcmp(argument, "ignore"))
+    else if (!_tcsicmp(argument, _T("ignore")))
         *timeout = IGNORE;
-    else if ((argument[0] == '-') || !(*timeout = atoi(argument)))
+    else if ((argument[0] == _T('-')) || !(*timeout = _ttoi(argument)))
         res = FALSE;
     return res;
 }
 
 /* RunDll32 */
-void CALLBACK nsRE(NS_UNUSED HWND hwnd, NS_UNUSED HINSTANCE hinst, LPSTR lpszCmdLine, NS_UNUSED int nCmdShow)
+void CALLBACK nsRE(NS_UNUSED HWND hwnd, NS_UNUSED HINSTANCE hinst, LPTSTR lpszCmdLine, NS_UNUSED int nCmdShow)
 {
     DWORD timeout = IGNORE;
     action_t action = ACTION_INVALID;
     BOOL result = FALSE, kill = FALSE;
-    char *p = NULL, *e = NULL;
+    TCHAR *p = NULL, *e = NULL;
 
-    if ((p = strchr(lpszCmdLine, ' ')))
+    if ((p = _tcschr(lpszCmdLine, _T(' '))))
     {
         *p = 0; p++;
         if ((action = nsiParseAction(lpszCmdLine)) == ACTION_INVALID)
         {
-            NS_SHOWERR("Invalid Action");
+            NS_SHOWERR(_T("Invalid Action"));
             return;
         }
     }
 
     if (!p)
     {
-        NS_SHOWERR("Invalid Arguments");
+        NS_SHOWERR(_T("Invalid Arguments"));
         return;
     }
 
-    if ((e = strchr(p, ' ')))
+    if ((e = _tcschr(p, _T(' '))))
     {
         *e = 0;
         e++;
@@ -87,11 +82,11 @@ void CALLBACK nsRE(NS_UNUSED HWND hwnd, NS_UNUSED HINSTANCE hinst, LPSTR lpszCmd
 
     if (!nsiParseTimeout(p, &timeout))
     {
-        NS_SHOWERR("Invalid Timeout");
+        NS_SHOWERR(_T("Invalid Timeout"));
         return;
     }
 
-    if (e && !_strnicmp(e, "kill", 4))
+    if (e && !_tcsnicmp(e, _T("kill"), 4))
         kill = TRUE;
 
     NS_DOACTION();
@@ -104,44 +99,44 @@ BOOL FakeStartupIsDone(void)
     DWORD osz;
     HANDLE hToken;
     HKEY hk;
-    char sinfo[MAX_PATH] = "";
+    TCHAR sinfo[MAX_PATH];
 
     osv.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
     GetVersionEx(&osv);
 
     if (osv.dwPlatformId != VER_PLATFORM_WIN32_NT)
     {
-        OutputDebugStringA("FakeStartupIsDone::No Need");
+        OutputDebugString(_T("FakeStartupIsDone::No Need"));
         return TRUE;
     }
 
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
     {
-        OutputDebugStringA("FakeStartupIsDone::OpenProcessToken");
+        OutputDebugString(_T("FakeStartupIsDone::OpenProcessToken"));
         return FALSE;
     }
 
     if (!GetTokenInformation(hToken, TokenStatistics, &tst, sizeof(TOKEN_STATISTICS), &osz))
     {
         CloseHandle(hToken);
-        OutputDebugStringA("FakeStartupIsDone::GetTokenInformation");
+        OutputDebugString(_T("FakeStartupIsDone::GetTokenInformation"));
         return FALSE;
     }
 
     CloseHandle(hToken);
 
-    _snprintf(sinfo, MAX_PATH - 1, "%s\\%08x%08x", SESSIONINFOKEY, tst.AuthenticationId.HighPart, tst.AuthenticationId.LowPart);
+    _sntprintf(sinfo, MAX_PATH - 1, _T("%s\\%08x%08x"), SESSIONINFOKEY, tst.AuthenticationId.HighPart, tst.AuthenticationId.LowPart);
     sinfo[MAX_PATH - 1] = 0;
 
-    if (RegCreateKeyExA(HKEY_CURRENT_USER, sinfo, 0, NULL, REG_OPTION_VOLATILE, MAXIMUM_ALLOWED, NULL, &hk, NULL))
+    if (RegCreateKeyEx(HKEY_CURRENT_USER, sinfo, 0, NULL, REG_OPTION_VOLATILE, MAXIMUM_ALLOWED, NULL, &hk, NULL))
     {
-        OutputDebugStringA("FakeStartupIsDone::RegCreateKeyExA SessionInfo");
+        OutputDebugString(_T("FakeStartupIsDone::RegCreateKeyExA SessionInfo"));
         return FALSE;
     }
 
-    if (RegCreateKeyExA(hk, "StartupHasBeenRun", 0, NULL, REG_OPTION_VOLATILE, KEY_WRITE, NULL, &hk, NULL))
+    if (RegCreateKeyEx(hk, _T("StartupHasBeenRun"), 0, NULL, REG_OPTION_VOLATILE, KEY_WRITE, NULL, &hk, NULL))
     {
-        OutputDebugStringA("FakeStartupIsDone::RegCreateKeyExA StartupHasBeenRun");
+        OutputDebugString(_T("FakeStartupIsDone::RegCreateKeyExA StartupHasBeenRun"));
         RegCloseKey(hk);
         return FALSE;
     }
@@ -152,18 +147,18 @@ BOOL FakeStartupIsDone(void)
 
 BOOL StartExplorer(DWORD timeout, NS_UNUSED BOOL kill)
 {
-    STARTUPINFOA si;
+    STARTUPINFO si;
     PROCESS_INFORMATION pi;
-    char shellpath[MAX_PATH];
+    TCHAR shellpath[MAX_PATH];
 
-    OutputDebugStringA("nsRE::StartExplorer");
+    OutputDebugString(_T("nsRE::StartExplorer"));
 
-    if (FindWindowA(SHELLWND, NULL))
-        NS_FAILED(NULL, "Explorer already running");
+    if (FindWindow(SHELLWND, NULL))
+        NS_FAILED(NULL, _T("Explorer already running"));
 
-    GetWindowsDirectoryA(shellpath, MAX_PATH - 1);
+    GetWindowsDirectory(shellpath, MAX_PATH - 1);
     shellpath[MAX_PATH - 1] = 0;
-    strncat(shellpath, SHELL, MAX_PATH - 1);
+    _tcsncat(shellpath, SHELL, MAX_PATH - 1);
     shellpath[MAX_PATH - 1] = 0;
 
     FakeStartupIsDone();
@@ -173,7 +168,7 @@ BOOL StartExplorer(DWORD timeout, NS_UNUSED BOOL kill)
 
     si.cb = sizeof(STARTUPINFO);
 
-    if(!CreateProcessA(NULL,    /* No module name (use command line) */
+    if(!CreateProcess(NULL,     /* No module name (use command line) */
         shellpath,              /* Command line */
         NULL,                   /* Process handle not inheritable */
         NULL,                   /* Thread handle not inheritable */
@@ -183,16 +178,16 @@ BOOL StartExplorer(DWORD timeout, NS_UNUSED BOOL kill)
         NULL,                   /* Use parent's starting directory */
         &si,                    /* Pointer to STARTUPINFO structure */
         &pi))                   /* Pointer to PROCESS_INFORMATION structure */
-        NS_FAILED(NULL, "Cannot spawn explorer process");
+        NS_FAILED(NULL, _T("Cannot spawn explorer process"));
 
     switch (WaitForInputIdle(pi.hProcess, timeout))
     {
         case 0            : break; /* OK */
         case WAIT_TIMEOUT :
             if (timeout == IGNORE) break; /* OK as requested */
-            NS_FAILED(pi.hProcess, "Timeout while waiting for explorer process");
-        case WAIT_FAILED  : NS_FAILED(pi.hProcess, "Error while waiting for explorer process");
-        default           : NS_FAILED(pi.hProcess, "This should not be reached");
+            NS_FAILED(pi.hProcess, _T("Timeout while waiting for explorer process"));
+        case WAIT_FAILED  : NS_FAILED(pi.hProcess, _T("Error while waiting for explorer process"));
+        default           : NS_FAILED(pi.hProcess, _T("This should not be reached"));
     }
 
     return TRUE;
@@ -206,12 +201,12 @@ BOOL CALLBACK CloseExplorerWindows(HWND hwnd, LPARAM lParam)
     if (pid == exData->pid)
     {
 #ifdef _DEBUG
-        char buff[1024], title[1024];
-        GetWindowTextA(hwnd, title, 1023);
-        _snprintf(buff, 1023, "nsRE::CallBack closing window %s (0x%p)", title, hwnd);
-        OutputDebugStringA(buff);
+        TCHAR buff[1024], title[1024];
+        GetWindowText(hwnd, title, sizeof(title) - 1);
+        _sntprintf(buff, sizeof(buff) - 1, _T("nsRE::CallBack closing window %s (0x%p)"), title, hwnd);
+        OutputDebugString(buff);
 #endif
-        PostMessageA(hwnd, WM_QUIT, 0, 0);
+        PostMessage(hwnd, WM_QUIT, 0, 0);
     }
 
     return TRUE;
@@ -222,15 +217,15 @@ BOOL QuitExplorer(DWORD timeout, NS_UNUSED BOOL kill)
     HANDLE explProc = NULL;
     nsExpData exData;
 
-    OutputDebugStringA("nsRE::QuitExplorer");
+    OutputDebugString(_T("nsRE::QuitExplorer"));
 
-    if (!(exData.explWin = FindWindowA(SHELLWND, NULL)))
-        NS_FAILED(explProc, "Cannot find explorer window");
+    if (!(exData.explWin = FindWindow(SHELLWND, NULL)))
+        NS_FAILED(explProc, _T("Cannot find explorer window"));
 
     GetWindowThreadProcessId(exData.explWin, &exData.pid);
 
     if (!(explProc = OpenProcess(SYNCHRONIZE, FALSE, exData.pid)))
-        NS_FAILED(explProc, "Cannot open explorer proces");
+        NS_FAILED(explProc, _T("Cannot open explorer proces"));
 
     EnumWindows(CloseExplorerWindows, (LPARAM) &exData);
 
@@ -238,19 +233,19 @@ BOOL QuitExplorer(DWORD timeout, NS_UNUSED BOOL kill)
     {
         case WAIT_OBJECT_0: break; /* OK */
         case WAIT_ABANDONED:
-            NS_FAILED(explProc, "WaitForSingleObject() returned Abandoned (?)");
+            NS_FAILED(explProc, _T("WaitForSingleObject() returned Abandoned (?)"));
         case WAIT_TIMEOUT:
             if (timeout == IGNORE) break; /* OK as requested */
             if (kill)
             {
-                OutputDebugStringA("nsRE::QuitExplorer Terminating explorer");
+                OutputDebugString(_T("nsRE::QuitExplorer Terminating explorer"));
                 TerminateProcess(explProc, 0); /* Kill the process if requested */
             }
             StartExplorer(IGNORE, FALSE); /* restart anyway or the user will have no shell */
             if (kill)
-                NS_FAILED(explProc, "Process killed due to timeout");
+                NS_FAILED(explProc, _T("Process killed due to timeout"));
             else
-                NS_FAILED(explProc, "Timeout while waiting for explorer process termination");
+                NS_FAILED(explProc, _T("Timeout while waiting for explorer process termination"));
     }
 
     CloseHandle(explProc);
@@ -259,6 +254,6 @@ BOOL QuitExplorer(DWORD timeout, NS_UNUSED BOOL kill)
 
 BOOL RestartExplorer(DWORD timeout, BOOL kill)
 {
-    OutputDebugStringA("nsRE::RestartExplorer");
+    OutputDebugString(_T("nsRE::RestartExplorer"));
     return (QuitExplorer(timeout, kill) && StartExplorer(timeout, kill));
 }

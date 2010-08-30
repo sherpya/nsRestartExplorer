@@ -1,6 +1,6 @@
 NSIS Plugin to Start, Quit and gracefully Restart Explorer
 
-Copyright (c) 2008 Gianluigi Tiesi <sherpya@netfarm.it>
+Copyright (c) 2008-2010 Gianluigi Tiesi <sherpya@netfarm.it>
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -52,3 +52,4 @@ kill (optional):
   it should work with all versions of Windows, no infos about Vista
 - MinGW executable is smaller since it uses system msvcrt so it's
   suitable for small installations
+- Ansi Build is for standard NSIS, Unicode is for NSIS Unicode
