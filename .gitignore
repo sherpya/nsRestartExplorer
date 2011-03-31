@@ -1,0 +1,7 @@
+*.7z
+Release
+Debug
+*.ncb
+*.suo
+*.vcproj.*
+binaries
